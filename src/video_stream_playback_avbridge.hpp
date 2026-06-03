@@ -1,5 +1,6 @@
 #pragma once
 
+#include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/image.hpp>
 #include <godot_cpp/classes/image_texture.hpp>
 #include <godot_cpp/classes/ref.hpp>
@@ -42,6 +43,11 @@ private:
     avb_decoder   *_decoder = nullptr;
     avb_media_info _info{};
     bool           _decoder_open = false;
+
+    // Kept alive for the decoder's lifetime when decoding through Godot's
+    // virtual filesystem (res:// inside an exported .pck, where no real OS path
+    // exists). The avbridge I/O callbacks read through this handle.
+    Ref<FileAccess> _file_access;
 
     bool   _playing = false;
     bool   _paused  = false;

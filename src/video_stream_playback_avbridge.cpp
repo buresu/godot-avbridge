@@ -3,9 +3,41 @@
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
+#include <cstdio>
 #include <cstring>
 
 using namespace godot;
+
+// avbridge I/O callbacks backed by a Godot FileAccess. Used to decode through
+// the engine's virtual filesystem (so res:// inside an exported .pck works).
+// `user` is the FileAccess* kept alive in _file_access.
+namespace {
+
+int avb_fa_read(void *user, unsigned char *buf, int size) {
+    auto *fa = static_cast<FileAccess *>(user);
+    PackedByteArray chunk = fa->get_buffer(size);
+    int n = (int)chunk.size();
+    if (n > 0) {
+        memcpy(buf, chunk.ptr(), (size_t)n);
+    }
+    return n; // 0 at end of stream
+}
+
+long long avb_fa_seek(void *user, long long offset, int whence) {
+    auto *fa = static_cast<FileAccess *>(user);
+    switch (whence) {
+        case SEEK_CUR: fa->seek((int64_t)fa->get_position() + offset); break;
+        case SEEK_END: fa->seek_end(offset);                          break;
+        default:       fa->seek(offset);                              break; // SEEK_SET
+    }
+    return (long long)fa->get_position();
+}
+
+long long avb_fa_size(void *user) {
+    return (long long)static_cast<FileAccess *>(user)->get_length();
+}
+
+} // namespace
 
 VideoStreamPlaybackAVBridge::VideoStreamPlaybackAVBridge() {
     _texture.instantiate();
@@ -32,15 +64,33 @@ bool VideoStreamPlaybackAVBridge::_open_decoder() {
         return false;
     }
 
-    // avbridge opens a real filesystem path; resolve res:// / user:// to one.
-    String global = ProjectSettings::get_singleton()->globalize_path(_file_path);
-
     avb_decode_options opts = avb_decode_options_default();
     opts.enable_video = 1;
     opts.enable_audio = 1;
     opts.video_format = AVB_PIXEL_FORMAT_RGBA8;
 
-    avb_result res = avb_decoder_open(&_decoder, global.utf8().get_data(), &opts);
+    // Prefer opening the real file directly: the backend streams from disk with
+    // no temporary copy. globalize_path resolves res:// / user:// to an OS path.
+    String     global = ProjectSettings::get_singleton()->globalize_path(_file_path);
+    avb_result res    = avb_decoder_open(&_decoder, global.utf8().get_data(), &opts);
+
+    // Fall back to Godot's virtual filesystem via I/O callbacks. This handles
+    // res:// packed into an exported .pck/.zip, where no real OS path exists.
+    if (res != AVB_OK) {
+        if (_decoder) {
+            avb_decoder_close(_decoder);
+            _decoder = nullptr;
+        }
+        _file_access = FileAccess::open(_file_path, FileAccess::READ);
+        if (_file_access.is_valid()) {
+            avb_io_callbacks cb{};
+            cb.read = avb_fa_read;
+            cb.seek = avb_fa_seek;
+            cb.size = avb_fa_size;
+            res = avb_decoder_open_io(&_decoder, &cb, _file_access.ptr(), &opts);
+        }
+    }
+
     if (res != AVB_OK) {
         const char *err = _decoder ? avb_decoder_get_last_error(_decoder) : "unknown";
         UtilityFunctions::printerr("[avbridge] open failed (", avb_result_string(res),
@@ -71,6 +121,7 @@ void VideoStreamPlaybackAVBridge::_close_decoder() {
         avb_decoder_close(_decoder);
         _decoder = nullptr;
     }
+    _file_access         = Ref<FileAccess>(); // release after closing the decoder
     _decoder_open        = false;
     _info                = avb_media_info{};
     _have_next           = false;
@@ -125,7 +176,7 @@ void VideoStreamPlaybackAVBridge::_mix_audio(double p_time) {
 
         // 3. Decode another block.
         _audio_pending.resize(BLOCK_FRAMES * _channels);
-        int got = avb_decoder_read_audio_f32(_decoder, _audio_pending.ptrw(), BLOCK_FRAMES);
+        int got = avb_decoder_read_audio_f32(_decoder, _audio_pending.ptrw(), BLOCK_FRAMES, nullptr);
         if (got <= 0) {
             _audio_pending.clear();
             return; // End of audio stream.
@@ -196,7 +247,7 @@ void VideoStreamPlaybackAVBridge::_play() {
     _paused  = false;
     _time    = 0.0;
     if (_decoder_open) {
-        avb_decoder_seek(_decoder, 0.0);
+        avb_decoder_seek(_decoder, 0.0, nullptr);
         _texture_initialized = false;
         _reset_audio();
         _decode_next_frame();
@@ -240,12 +291,13 @@ void VideoStreamPlaybackAVBridge::_seek(double p_time) {
     if (!_decoder_open) {
         return;
     }
-    if (avb_decoder_seek(_decoder, p_time) != AVB_OK) {
+    double landed = p_time;
+    if (avb_decoder_seek(_decoder, p_time, &landed) != AVB_OK) {
         return;
     }
-    _time = p_time;
+    _time = landed;
     _reset_audio();
-    _audio_frames_read = (int64_t)(p_time * _mix_rate);
+    _audio_frames_read = (int64_t)(landed * _mix_rate);
     _decode_next_frame();
     // Show the seeked frame right away so scrubbing updates the image even
     // while paused (when _update() does nothing).
