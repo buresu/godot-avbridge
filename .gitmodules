@@ -1,0 +1,7 @@
+[submodule "lib/godot-cpp"]
+	path = lib/godot-cpp
+	url = https://github.com/godotengine/godot-cpp.git
+	branch = 4.3
+[submodule "lib/libavbridge"]
+	path = lib/libavbridge
+	url = https://github.com/buresu/libavbridge.git

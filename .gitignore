@@ -1,0 +1,13 @@
+/build/
+/demo/.godot/
+/demo/addons/godot-avbridge/bin/
+*.o
+*.os
+*.obj
+*.a
+*.so
+*.dylib
+*.dll
+*.lib
+*.pdb
+.DS_Store

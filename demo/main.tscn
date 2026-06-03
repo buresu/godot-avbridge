@@ -1,0 +1,42 @@
+[gd_scene load_steps=2 format=3 uid="uid://cavbridgedemo01"]
+
+[ext_resource type="Script" path="res://main.gd" id="1_main"]
+
+[node name="Main" type="Node"]
+script = ExtResource("1_main")
+
+[node name="VideoStreamPlayer" type="VideoStreamPlayer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+expand = true
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="StatusLabel" type="Label" parent="UI"]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 800.0
+offset_bottom = 48.0
+theme_override_font_sizes/font_size = 20
+text = "Initializing..."
+
+[node name="OpenButton" type="Button" parent="UI"]
+offset_left = 16.0
+offset_top = 56.0
+offset_right = 202.0
+offset_bottom = 88.0
+text = "Open Video"
+
+[node name="FileDialog" type="FileDialog" parent="UI"]
+title = "Open a Video File"
+initial_position = 2
+size = Vector2i(800, 600)
+ok_button_text = "Open"
+file_mode = 0
+access = 2
+use_native_dialog = true
+filters = PackedStringArray("*.mp4, *.mov, *.m4v, *.webm, *.mkv ; Video Files")
+
+[connection signal="pressed" from="UI/OpenButton" to="." method="_on_open_button_pressed"]
+[connection signal="file_selected" from="UI/FileDialog" to="." method="_on_file_dialog_file_selected"]

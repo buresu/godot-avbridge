@@ -1,0 +1,18 @@
+[configuration]
+entry_symbol = "godot_avbridge_init"
+compatibility_minimum = "4.3"
+reloadable = false
+
+[libraries]
+windows.debug.x86_64   = "res://addons/godot-avbridge/bin/libgodot-avbridge.windows.debug.x86_64.dll"
+windows.release.x86_64 = "res://addons/godot-avbridge/bin/libgodot-avbridge.windows.release.x86_64.dll"
+windows.debug.arm64    = "res://addons/godot-avbridge/bin/libgodot-avbridge.windows.debug.arm64.dll"
+windows.release.arm64  = "res://addons/godot-avbridge/bin/libgodot-avbridge.windows.release.arm64.dll"
+
+macos.debug.arm64      = "res://addons/godot-avbridge/bin/libgodot-avbridge.macos.debug.arm64.dylib"
+macos.release.arm64    = "res://addons/godot-avbridge/bin/libgodot-avbridge.macos.release.arm64.dylib"
+
+linux.debug.x86_64     = "res://addons/godot-avbridge/bin/libgodot-avbridge.linux.debug.x86_64.so"
+linux.release.x86_64   = "res://addons/godot-avbridge/bin/libgodot-avbridge.linux.release.x86_64.so"
+linux.debug.arm64      = "res://addons/godot-avbridge/bin/libgodot-avbridge.linux.debug.arm64.so"
+linux.release.arm64    = "res://addons/godot-avbridge/bin/libgodot-avbridge.linux.release.arm64.so"
