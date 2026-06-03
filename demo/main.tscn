@@ -21,12 +21,46 @@ offset_bottom = 48.0
 theme_override_font_sizes/font_size = 20
 text = "Initializing..."
 
-[node name="OpenButton" type="Button" parent="UI"]
+[node name="SeekBar" type="HSlider" parent="UI"]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
 offset_left = 16.0
-offset_top = 56.0
-offset_right = 202.0
-offset_bottom = 88.0
+offset_top = -96.0
+offset_right = -16.0
+offset_bottom = -64.0
+grow_horizontal = 2
+grow_vertical = 0
+min_value = 0.0
+max_value = 1.0
+step = 0.001
+editable = false
+
+[node name="ButtonRow" type="HBoxContainer" parent="UI"]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = -56.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 12
+
+[node name="OpenButton" type="Button" parent="UI/ButtonRow"]
+custom_minimum_size = Vector2(120, 0)
 text = "Open Video"
+
+[node name="PlayPauseButton" type="Button" parent="UI/ButtonRow"]
+custom_minimum_size = Vector2(120, 0)
+text = "Play"
+
+[node name="StopButton" type="Button" parent="UI/ButtonRow"]
+custom_minimum_size = Vector2(120, 0)
+text = "Stop"
 
 [node name="FileDialog" type="FileDialog" parent="UI"]
 title = "Open a Video File"
@@ -38,5 +72,7 @@ access = 2
 use_native_dialog = true
 filters = PackedStringArray("*.mp4, *.mov, *.m4v, *.webm, *.mkv ; Video Files")
 
-[connection signal="pressed" from="UI/OpenButton" to="." method="_on_open_button_pressed"]
+[connection signal="pressed" from="UI/ButtonRow/OpenButton" to="." method="_on_open_button_pressed"]
+[connection signal="pressed" from="UI/ButtonRow/PlayPauseButton" to="." method="_on_play_pause_button_pressed"]
+[connection signal="pressed" from="UI/ButtonRow/StopButton" to="." method="_on_stop_button_pressed"]
 [connection signal="file_selected" from="UI/FileDialog" to="." method="_on_file_dialog_file_selected"]

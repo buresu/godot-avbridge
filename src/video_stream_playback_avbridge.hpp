@@ -71,6 +71,7 @@ private:
     void       _decode_next_frame();
     void       _mix_audio(double p_time);
     void       _reset_audio();
+    void       _present_frame(const Ref<Image> &p_image);
     Ref<Image> _frame_to_image(const avb_video_frame &p_frame) const;
 };
 

@@ -160,6 +160,18 @@ Ref<Image> VideoStreamPlaybackAVBridge::_frame_to_image(const avb_video_frame &p
     return Image::create_from_data(w, h, false, Image::FORMAT_RGBA8, buf);
 }
 
+void VideoStreamPlaybackAVBridge::_present_frame(const Ref<Image> &p_image) {
+    if (p_image.is_null()) {
+        return;
+    }
+    if (!_texture_initialized) {
+        _texture->set_image(p_image);
+        _texture_initialized = true;
+    } else {
+        _texture->update(p_image);
+    }
+}
+
 void VideoStreamPlaybackAVBridge::_decode_next_frame() {
     _have_next = false;
     if (!_decoder_open) {
@@ -235,6 +247,11 @@ void VideoStreamPlaybackAVBridge::_seek(double p_time) {
     _reset_audio();
     _audio_frames_read = (int64_t)(p_time * _mix_rate);
     _decode_next_frame();
+    // Show the seeked frame right away so scrubbing updates the image even
+    // while paused (when _update() does nothing).
+    if (_have_next) {
+        _present_frame(_next_image);
+    }
 }
 
 void VideoStreamPlaybackAVBridge::_update(double p_delta) {
@@ -253,24 +270,15 @@ void VideoStreamPlaybackAVBridge::_update(double p_delta) {
     _mix_audio(_time);
 
     while (_have_next && _next_pts <= _time) {
-        if (!_texture_initialized) {
-            _texture->set_image(_next_image);
-            _texture_initialized = true;
-        } else {
-            _texture->update(_next_image);
-        }
+        _present_frame(_next_image);
         _decode_next_frame();
     }
 
-    // End of stream: loop back to the start.
+    // End of stream: stop so VideoStreamPlayer emits "finished". (The clip does
+    // not loop; replay by calling play() again.)
     if (!_have_next) {
-        if (avb_decoder_seek(_decoder, 0.0) == AVB_OK) {
-            _time = 0.0;
-            _reset_audio();
-            _decode_next_frame();
-        } else {
-            _playing = false;
-        }
+        _playing = false;
+        _time    = _get_length();
     }
 }
 
