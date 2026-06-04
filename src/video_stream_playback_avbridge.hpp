@@ -29,6 +29,7 @@ public:
     double _get_length() const override;
     double _get_playback_position() const override;
     void   _seek(double p_time) override;
+    void   _set_audio_track(int p_idx) override;
     void   _update(double p_delta) override;
     int    _get_channels() const override;
     int    _get_mix_rate() const override;
@@ -52,6 +53,7 @@ private:
     bool   _playing = false;
     bool   _paused  = false;
     double _time    = 0.0;
+    int    _audio_track = 0; // logical audio track index (VideoStreamPlayer.audio_track)
 
     // One decoded video frame buffered ahead; shown once playback time
     // reaches its presentation timestamp.

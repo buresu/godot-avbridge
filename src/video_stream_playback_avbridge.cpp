@@ -65,9 +65,10 @@ bool VideoStreamPlaybackAVBridge::_open_decoder() {
     }
 
     avb_decode_options opts = avb_decode_options_default();
-    opts.enable_video = 1;
-    opts.enable_audio = 1;
-    opts.video_format = AVB_PIXEL_FORMAT_RGBA8;
+    opts.enable_video        = 1;
+    opts.enable_audio        = 1;
+    opts.audio_stream_index  = _audio_track;
+    opts.video_format        = AVB_PIXEL_FORMAT_RGBA8;
 
     // Prefer opening the real file directly: the backend streams from disk with
     // no temporary copy. globalize_path resolves res:// / user:// to an OS path.
@@ -303,6 +304,23 @@ void VideoStreamPlaybackAVBridge::_seek(double p_time) {
     // while paused (when _update() does nothing).
     if (_have_next) {
         _present_frame(_next_image);
+    }
+}
+
+void VideoStreamPlaybackAVBridge::_set_audio_track(int p_idx) {
+    if (p_idx < 0 || p_idx == _audio_track) {
+        return;
+    }
+    _audio_track = p_idx;
+    // Re-open on the new track if a decoder already exists, preserving position.
+    // (VideoStreamPlayer applies audio_track before play, so channels/mix_rate
+    // are re-read for the new track when playback starts.)
+    if (_decoder_open) {
+        double t = _time;
+        _close_decoder();
+        if (_open_decoder() && t > 0.0) {
+            _seek(t);
+        }
     }
 }
 
