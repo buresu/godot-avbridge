@@ -30,6 +30,7 @@ add_subdirectory("${PROJECT_SOURCE_DIR}/lib/godot-cpp")
 set(AVB_BUILD_SHARED   OFF CACHE BOOL "" FORCE)
 set(AVB_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(AVB_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
+set(AVB_INSTALL        OFF CACHE BOOL "" FORCE) # don't install avbridge to the system
 add_subdirectory("${PROJECT_SOURCE_DIR}/lib/libavbridge" EXCLUDE_FROM_ALL)
 
 file(GLOB_RECURSE INCLUDES "src/*.hpp")
